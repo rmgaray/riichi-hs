@@ -1,0 +1,5 @@
+.direnv
+.git
+.envrc
+.pre-commit-config.yaml
+dist-newstyle
