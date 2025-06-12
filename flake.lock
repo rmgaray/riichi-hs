@@ -128,7 +128,8 @@
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
         "nixpkgs-hs-updates": "nixpkgs-hs-updates",
-        "pre-commit-hooks": "pre-commit-hooks"
+        "pre-commit-hooks": "pre-commit-hooks",
+        "typedKanrenSrc": "typedKanrenSrc"
       }
     },
     "systems": {
@@ -143,6 +144,23 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "typedKanrenSrc": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1740936430,
+        "narHash": "sha256-jh1r0abLo/PeXWBQO6lmNMvvMrxcBeEkgryTB3zvdiU=",
+        "owner": "snejugal",
+        "repo": "typedKanren",
+        "rev": "d6d998c80624f6b71d853565e650fecf76be0203",
+        "type": "github"
+      },
+      "original": {
+        "owner": "snejugal",
+        "repo": "typedKanren",
+        "rev": "d6d998c80624f6b71d853565e650fecf76be0203",
         "type": "github"
       }
     }
