@@ -1,6 +1,8 @@
 {
   description = "Packaging, devShells and hooks for riichi";
 
+  # Reference for static builds: https://cs-syd.eu/posts/2024-04-20-static-linking-haskell-nix
+
   inputs = {
     # We temporarily use the "haskell-updates" branch of Nixpkgs to get
     # HLS 2.11, which supports code actions for the eval plugin.
@@ -23,15 +25,72 @@
     typedKanrenSrc,
   }:
     flake-utils.lib.eachDefaultSystem (system: let
+      inherit (nixpkgs.legacyPackages.${system}.pkgs) lib;
+      ### Compiler
       ghcVersion = "ghc967";
-      haskell-lsp = nixpkgs-hs-updates.legacyPackages.${system}.pkgs.haskell.packages.${ghcVersion}.haskell-language-server;
-      pkgs = nixpkgs.legacyPackages.${system}.pkgs;
-      hsPkgs = pkgs.haskell.packages.${ghcVersion};
-      # Haskell packages extended with typedKanren
-      hsPkgs' = hsPkgs.extend (final: _prev: {
-        typedKanren = final.callPackage (final.callCabal2nix "typedKanren" typedKanrenSrc) {};
-      });
       compiler = pkgs.haskell.compiler.${ghcVersion};
+      ### Overlays
+      # Adds typedKanren to `haskell.packages`
+      typedKanrenOverlay = final: prev: {
+        typedKanren = final.callPackage (final.callCabal2nix "typedKanren" typedKanrenSrc) {};
+      };
+      # Fixes issues with TH in static builds
+      staticCompilerOverlay = final: prev: {
+        ghc =
+          prev.ghc.override
+          {
+            enableRelocatedStaticLibs = true;
+            enableShared = false;
+            enableDwarf = false;
+          };
+      };
+      # Apply overlays
+      # TODO: factor out common logic
+      pkgs =
+        nixpkgs.legacyPackages.${system}.pkgs.extend
+        (
+          _f: prev: {
+            haskell =
+              prev.haskell
+              // {
+                packages =
+                  prev.haskell.packages
+                  // {
+                    "${ghcVersion}" = prev.haskell.packages."${ghcVersion}".extend typedKanrenOverlay;
+                  };
+              };
+          }
+        );
+      pkgsMusl =
+        nixpkgs.legacyPackages.${system}.pkgsMusl.extend
+        (
+          f: prev: {
+            haskell =
+              prev.haskell
+              // {
+                packages =
+                  prev.haskell.packages
+                  // {
+                    "${ghcVersion}" =
+                      (prev.haskell.packages."${ghcVersion}".extend staticCompilerOverlay).extend typedKanrenOverlay;
+                  };
+                # compiler = prev.haskell.compiler //
+                #   {
+                #     "${ghcVersion}" = prev.haskell.compiler."${ghcVersion}".override
+                #     {
+                #       enableRelocatedStaticLibs = true;
+                #       enableShared = false;
+                #       enableDwarf = false;
+                #     };
+                #   };
+              };
+          }
+        );
+      hsPkgs = pkgs.haskell.packages.${ghcVersion};
+      hsPkgsMusl = pkgsMusl.haskell.packages.${ghcVersion};
+      utils = import ./utils.nix pkgsMusl;
+      # TODO: Drop haskell-updates input when HLS 2.11 lands in staging
+      haskell-lsp = nixpkgs-hs-updates.legacyPackages.${system}.pkgs.haskell.packages.${ghcVersion}.haskell-language-server;
     in {
       checks = {
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
@@ -55,6 +114,9 @@
         ];
       };
 
-      packages.riichi = hsPkgs'.callPackage ./default.nix {};
+      packages.riichi = hsPkgs.callPackage ./default.nix {};
+      packages.riichi_static =
+        utils.overrideMakeStatic
+        (hsPkgsMusl.callPackage ./default.nix {});
     });
 }
