@@ -20,9 +20,11 @@ module Utils
     allSatisfy,
     append,
     insert,
+    insertOrd,
     insertSort,
     member,
     select,
+    selectOrd,
     mapsToWith,
     -- Order predicates
     beforeOrEqual,
@@ -88,6 +90,10 @@ instance Num Unary where
 
 instance Show Unary where
   show u = show (ununary u)
+
+instance Enum Unary where
+  toEnum = Unary . flip replicate ()
+  fromEnum (Unary ls) = length ls
 
 deriving instance Show LogicUnary
 
@@ -201,6 +207,9 @@ insert z xs ys = do
 select :: forall a. (Logical a) => Term a -> Term [a] -> Term [a] -> Goal ()
 select z xs ys = insert z ys xs
 
+selectOrd :: (Logical a) => (Term a -> Term a -> Goal ()) -> Term a -> Term [a] -> Term [a] -> Goal ()
+selectOrd ord z xs ys = insertOrd ord z ys xs
+
 member :: forall a. (Logical a) => Term a -> Term [a] -> Goal ()
 member z xs = do
   (x, xs') <- fresh
@@ -232,26 +241,27 @@ isSortedBy lt ls =
           x `lt` y
           isSortedBy lt xs
 
-insertSort' :: forall a. (Logical a) => (Term a -> Term a -> Goal ()) -> Term a -> Term [a] -> Term [a] -> Goal ()
-insertSort' ord x ys zs =
-  disjMany
-    [ do
-        ys & isNil
-        zs & isSingleton x,
-      do
-        (y, ys') <- fresh
-        ys & hasHeadTail y ys'
-        disj
-          do
-            ord x y
-            zs & hasHeadTail x ys
-          do
-            y =/= x
-            ord y x
-            zs' <- fresh
-            insertSort' ord x ys' zs'
-            zs & hasHeadTail y zs'
-    ]
+-- | A ternary relation (x, ys, zs), where `zs` is the list `ys` with `x` inserted
+-- while preserving the order `ord`. The list `ys` is assumed to be ordered.
+insertOrd :: forall a. (Logical a) => (Term a -> Term a -> Goal ()) -> Term a -> Term [a] -> Term [a] -> Goal ()
+insertOrd ord x ys zs =
+  disj
+    do
+      ys & isNil
+      zs & isSingleton x
+    do
+      (y, ys') <- fresh
+      ys & hasHeadTail y ys'
+      disj
+        do
+          ord x y
+          zs & hasHeadTail x ys
+        do
+          y =/= x
+          ord y x
+          zs' <- fresh
+          insertOrd ord x ys' zs'
+          zs & hasHeadTail y zs'
 
 -- TODO: Maybe use a more efficient sort?
 insertSort :: forall a. (Logical a) => (Term a -> Term a -> Goal ()) -> Term [a] -> Term [a] -> Goal ()
@@ -263,7 +273,7 @@ insertSort ord xs ys =
       (x, xs', sortedXs') <- fresh
       xs & hasHeadTail x xs'
       insertSort ord xs' sortedXs'
-      insertSort' ord x sortedXs' ys
+      insertOrd ord x sortedXs' ys
 
 -- ex = run \ls -> insertSort beforeOrEqualOrd ls (i [N1, N2, N3, N5, N8])
 
