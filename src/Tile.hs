@@ -269,11 +269,14 @@ instance Ord Tile where
   compare (WW _) _ = GT
 
 -- | Relational equivalent of the 'Ord' instance for 'Tile'
+-- This check is EXPENSIVE.
 compareP :: Term Tile -> Term Tile -> Goal ()
 compareP t1 t2 =
   disjMany
-    [ -- First is numbered
+    [ do
+        t1 === t2,
       do
+        -- First is numbered
         (n1, s1) <- fresh
         t1 & hasNumberSuit n1 s1
         disjMany
