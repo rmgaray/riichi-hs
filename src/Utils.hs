@@ -38,6 +38,7 @@ module Utils
     doesNotDecrease,
     -- Maybe predicates
     isJust,
+    isJustNot,
     isNothing,
     -- Others
     (.&.),
@@ -349,6 +350,9 @@ isNothing m = m & (matche & on _LogicNothing pure)
 
 isJust :: forall a. (Logical a) => Term a -> Term (Maybe a) -> Goal ()
 isJust v m = m & (matche & on _LogicJust (=== v))
+
+isJustNot :: forall a. (Logical a) => Term a -> Term (Maybe a) -> Goal ()
+isJustNot v m = m & (matche & on _LogicJust (=/= v))
 
 -- Predicate helpers
 
