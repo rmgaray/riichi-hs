@@ -6,7 +6,7 @@
   inputs = {
     # We temporarily use the "haskell-updates" branch of Nixpkgs to get
     # HLS 2.11, which supports code actions for the eval plugin.
-    nixpkgs-hs-updates.url = "github:NixOS/nixpkgs/haskell-updates";
+    nixpkgs-hs-updates.url = "github:NixOS/nixpkgs/9bd652c4305d1f6b6b59451036fd0a44a13f78d5";
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
     flake-utils.url = "github:numtide/flake-utils";

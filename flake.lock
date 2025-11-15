@@ -82,8 +82,8 @@
       },
       "original": {
         "owner": "NixOS",
-        "ref": "haskell-updates",
         "repo": "nixpkgs",
+        "rev": "9bd652c4305d1f6b6b59451036fd0a44a13f78d5",
         "type": "github"
       }
     },
